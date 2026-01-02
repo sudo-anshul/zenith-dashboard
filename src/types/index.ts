@@ -13,11 +13,20 @@ export interface DayStats {
     total: number;
 }
 
+export interface QA {
+    question: string;
+    answer: string;
+}
+
+export type JournalType = 'daily' | 'weekly' | 'monthly' | 'freeform';
+
 export interface JournalEntry {
     id: string;
     date: string; // YYYY-MM-DD
-    content: string;
+    content: string; // Summary or freeform content
     lastUpdated: number;
+    type?: JournalType;
+    questions?: QA[];
 }
 
 export interface AppData {
