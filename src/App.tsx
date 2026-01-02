@@ -5,6 +5,9 @@ import { SpeedDial } from './components/SpeedDial';
 import { useWeather } from './hooks/useWeather';
 import { generateTheme, type ThemeColors } from './utils/themeGenerator';
 import { CloudRain, CloudSnow, Cloud, Sun, Moon, CloudLightning, Maximize2, Minimize2 } from 'lucide-react';
+import { Navigation } from './components/Navigation';
+import { JournalView } from './components/JournalView';
+import { HabitTracker } from './components/HabitTracker';
 
 // Available texture classes
 const TEXTURES = [
@@ -21,6 +24,7 @@ function App() {
   const [now, setNow] = useState(new Date());
   const [activeTexture, setActiveTexture] = useState(TEXTURES[0]);
   const [isZen, setIsZen] = useState(false); // Zen Mode State
+  const [currentView, setCurrentView] = useState<'goals' | 'journal' | 'habits'>('goals');
 
   // Set random texture on mount
   useEffect(() => {
@@ -116,14 +120,17 @@ function App() {
         <div className={`absolute inset-0 opacity-[0.15] ${activeTexture} mix-blend-overlay`} />
       </div>
 
-      {/* Main Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-center gap-12 lg:gap-24 h-screen max-h-[900px]">
+      {/* Navigation (Fixed Top Right) */}
+      <Navigation currentView={currentView} onViewChange={setCurrentView} isDark={theme.isDark} />
+
+      {/* Main Dashboard - Only visible when currentView is 'goals' */}
+      <div className={`relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-center gap-12 lg:gap-24 h-screen max-h-[900px] transition-all duration-300 ease-out ${currentView !== 'goals' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
         {/* LEFT COLUMN */}
-        <div className={`flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-8 transition-all duration-700 ${isZen ? 'translate-x-[50%] md:translate-x-[15%] scale-110' : ''}`}>
+        <div className={`flex-1 flex flex-col items-center ${isZen ? 'md:items-center text-center scale-110' : 'md:items-start md:text-left'} space-y-8 transition-all duration-500 ease-in-out`}>
 
           {/* Header - Hidden in Zen Mode */}
-          <div className={`space-y-3 transition-all duration-500 ${isZen ? 'opacity-0 pointer-events-none -translate-y-4' : 'opacity-100 translate-y-0 animate-fade-in-down'}`}>
+          <div className={`space-y-3 transition-all duration-500 ${isZen ? 'opacity-0 pointer-events-none -translate-y-4 fixed' : 'opacity-100 translate-y-0 animate-fade-in-down'}`}>
             <h1 className={`text-xl md:text-2xl font-light tracking-wide flex items-center gap-3 ${textSecondary}`}>
               {greeting}, <span className={`font-medium ${textPrimary}`}>Anshul</span>
               {weather && (
@@ -144,20 +151,37 @@ function App() {
             </div>
           </div>
 
-          <Clock isDark={theme.isDark} isZen={isZen} />
+          <div className={!isZen ? "animate-fade-in-left" : ""}>
+            <Clock isDark={theme.isDark} isZen={isZen} />
+          </div>
 
           {/* Speed Dial - Hidden in Zen Mode */}
-          <div className={`transition-all duration-500 delay-100 ${isZen ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}>
+          <div className={`transition-all duration-500 delay-100 ${!isZen ? 'animate-fade-in-up' : ''} ${isZen ? 'opacity-0 pointer-events-none translate-y-4 fixed' : 'opacity-100 translate-y-0'}`}>
             <SpeedDial isDark={theme.isDark} />
           </div>
 
         </div>
 
         {/* RIGHT COLUMN - Hidden in Zen Mode */}
-        <div className={`flex-shrink-0 w-full max-w-[400px] transition-all duration-500 ${isZen ? 'opacity-0 pointer-events-none translate-x-20' : 'opacity-100 translate-x-0'}`}>
+        <div className={`flex-shrink-0 w-full transition-all duration-500 ease-in-out ${!isZen ? 'animate-fade-in-right max-w-[400px]' : ''} ${isZen ? 'max-w-0 opacity-0 pointer-events-none overflow-hidden' : 'opacity-100'}`}>
           <TaskPanel isDark={theme.isDark} />
         </div>
 
+      </div>
+
+      {/* FULL PAGE OVERLAYS */}
+      {/* Journal View */}
+      <div className={`fixed inset-0 z-40 flex items-center justify-center p-6 transition-all duration-300 ease-out ${currentView === 'journal' ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+        <div className="w-full max-w-2xl">
+          {currentView === 'journal' && <JournalView isDark={theme.isDark} />}
+        </div>
+      </div>
+
+      {/* Habit Tracker View */}
+      <div className={`fixed inset-0 z-40 flex items-center justify-center p-6 transition-all duration-300 ease-out ${currentView === 'habits' ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+        <div className="w-full max-w-4xl">
+          {currentView === 'habits' && <HabitTracker isDark={theme.isDark} />}
+        </div>
       </div>
 
       {/* Zen Toggle Button */}

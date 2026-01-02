@@ -125,11 +125,23 @@ function applyWeather(base: ThemeColors, weather?: WeatherType): ThemeColors {
     return modified;
 }
 
-// Simple color adjuster (darken/lighten) placeholder
-// In a real app we'd use a color lib, but for now we trust the logic or keep it simple.
-function adjustColor(hex: string, _percent: number): string {
-    // Very dummy implementation
-    return hex;
+// Color adjustment utility - lightens/darkens hex colors
+function adjustColor(hex: string, percent: number): string {
+    // Remove # if present
+    const cleanHex = hex.replace('#', '');
+
+    // Parse RGB values
+    let r = parseInt(cleanHex.substring(0, 2), 16);
+    let g = parseInt(cleanHex.substring(2, 4), 16);
+    let b = parseInt(cleanHex.substring(4, 6), 16);
+
+    // Adjust by percent (-100 to 100)
+    r = Math.min(255, Math.max(0, Math.round(r + (r * percent / 100))));
+    g = Math.min(255, Math.max(0, Math.round(g + (g * percent / 100))));
+    b = Math.min(255, Math.max(0, Math.round(b + (b * percent / 100))));
+
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 

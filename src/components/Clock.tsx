@@ -39,27 +39,43 @@ export const Clock = ({ isDark, isZen = false }: ClockProps) => {
     const dateColor = isDark ? 'text-indigo-300/60' : 'text-indigo-600/60';
 
     return (
-        <div className={`flex flex-col items-center md:items-start select-none transition-all duration-700 ${isZen ? 'scale-125 md:scale-150 origin-center md:origin-left' : 'scale-100'}`}>
+        <div className={`flex flex-col items-center transition-all duration-700 ease-in-out select-none ${isZen ? 'md:items-center' : 'md:items-start'}`}>
             {/* Time Display */}
-            <div className="relative leading-[1.1] pb-2 overflow-visible">
+            <div
+                className={`relative leading-[1.1] pb-2 overflow-visible transition-transform duration-700 ease-in-out ${isZen ? 'origin-center' : 'origin-center md:origin-left'}`}
+                style={{
+                    transform: isZen ? 'scale(1.4)' : 'scale(1)',
+                }}
+            >
                 <span
-                    className={`font-extralight tracking-tighter block transition-all duration-700 ${isZen ? 'text-[6rem] sm:text-[9rem] lg:text-[13rem]' : 'text-[8rem] sm:text-[10rem] lg:text-[12rem]'}`}
+                    className={`font-extralight tracking-tighter block text-[8rem] sm:text-[10rem] lg:text-[12rem]`}
                     style={{
                         fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
                         ...gradientText,
-                        paddingBottom: '0.5em', // Significant padding to catch any descender
-                        marginBottom: '-0.3em'  // Pull layout back up to compensate
+                        paddingBottom: '0.1em',
+                        marginBottom: '-0.1em',
+                        paddingRight: '0.1em',
+                        marginRight: '-0.1em'
                     }}
                 >
-                    {displayHours}:{displayMinutes}{isZen && `:${displaySeconds}`}
+                    {displayHours}:{displayMinutes}
+                    {isZen && (
+                        <span
+                            className="opacity-0 animate-[fade-in_0.5s_0.2s_forwards]"
+                            style={{ ...gradientText }}
+                        >
+                            :{displaySeconds}
+                        </span>
+                    )}
                 </span>
+
                 <span className={`absolute top-[10%] -right-12 md:-right-16 text-3xl font-light tracking-widest ${periodColor}`}>
                     {period}
                 </span>
             </div>
 
             {/* Date Display - Cleaner Typography */}
-            <div className="mt-2 md:pl-2">
+            <div className={`mt-2 transition-all duration-700 ${isZen ? 'md:pl-0 text-center scale-110 opacity-80 origin-center' : 'md:pl-2 text-left origin-left'}`}>
                 <p className={`text-2xl md:text-3xl font-light tracking-wide ${dayColor}`}>
                     {weekday}
                 </p>
@@ -67,6 +83,12 @@ export const Clock = ({ isDark, isZen = false }: ClockProps) => {
                     {fullDate}
                 </p>
             </div>
+
+            <style>{`
+                @keyframes fade-in {
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
