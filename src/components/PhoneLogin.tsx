@@ -9,7 +9,7 @@ interface PhoneLoginProps {
 export const PhoneLogin = ({ isDark }: PhoneLoginProps) => {
     const { signInWithPhone, verifyOtp } = useSupabase();
     const [step, setStep] = useState<'phone' | 'otp'>('phone');
-    const [phone, setPhone] = useState('');
+    const [phone, setPhone] = useState('+91 ');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
