@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
+import { useSupabase } from '../context/SupabaseContext';
 import type { Task, AppData } from '../types';
 
 const STORAGE_KEY = 'startup-page-data';
@@ -14,8 +15,44 @@ const INITIAL_DATA: AppData = {
 
 export function useTaskManager() {
     const [data, setData] = useLocalStorage<AppData>(STORAGE_KEY, INITIAL_DATA);
+    const { supabase, session } = useSupabase();
 
-    // Daily Rollover Logic - Now safely inside useEffect
+    // 1. Sync from Cloud on Load
+    useEffect(() => {
+        if (!supabase || !session) return;
+
+        const fetchData = async () => {
+            // Fetch Tasks
+            const { data: cloudTasks, error } = await supabase
+                .from('tasks')
+                .select('*');
+
+            if (error) {
+                console.error('Error fetching tasks:', error);
+                return;
+            }
+
+            if (cloudTasks) {
+                if (cloudTasks.length > 0) {
+                    const mappedTasks: Task[] = cloudTasks.map(t => ({
+                        id: t.id,
+                        text: t.text,
+                        isCompleted: t.is_completed,
+                        createdAt: t.created_at,
+                        type: t.type as 'task' | 'habit',
+                        completionHistory: t.completion_history
+                    }));
+
+                    setData(prev => ({ ...prev, tasks: mappedTasks }));
+                }
+            }
+        };
+
+        fetchData();
+    }, [session, supabase, setData]);
+
+
+    // Daily Rollover Logic
     useEffect(() => {
         const today = getTodayString();
         if (data.lastActiveDate !== today) {
@@ -51,6 +88,27 @@ export function useTaskManager() {
         }
     }, [data.lastActiveDate, data.tasks, setData]);
 
+
+    // Helper to update cloud
+    const syncTaskToCloud = async (task: Task, action: 'UPSERT' | 'DELETE' = 'UPSERT') => {
+        if (!supabase || !session) return;
+
+        if (action === 'DELETE') {
+            await supabase.from('tasks').delete().eq('id', task.id);
+        } else {
+            await supabase.from('tasks').upsert({
+                id: task.id,
+                user_id: session.user.id,
+                text: task.text,
+                is_completed: task.isCompleted,
+                created_at: task.createdAt,
+                type: task.type,
+                completion_history: task.completionHistory
+            });
+        }
+    };
+
+
     const addTask = (text: string, type: 'task' | 'habit' = 'habit') => {
         const newTask: Task = {
             id: crypto.randomUUID(),
@@ -60,32 +118,60 @@ export function useTaskManager() {
             type,
             completionHistory: []
         };
+
         setData(prev => ({ ...prev, tasks: [...prev.tasks, newTask] }));
+        syncTaskToCloud(newTask, 'UPSERT');
     };
 
     const toggleTask = (id: string) => {
-        setData(prev => ({
-            ...prev,
-            tasks: prev.tasks.map(t =>
-                t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
-            )
-        }));
-    };
+        let updatedTask: Task | undefined;
 
-    const editTask = (id: string, newText: string) => {
-        setData(prev => ({
-            ...prev,
-            tasks: prev.tasks.map(t =>
-                t.id === id ? { ...t, text: newText } : t
-            )
-        }));
+        setData(prev => {
+            const nextTasks = prev.tasks.map(t => {
+                if (t.id === id) {
+                    updatedTask = { ...t, isCompleted: !t.isCompleted };
+                    return updatedTask;
+                }
+                return t;
+            });
+            return { ...prev, tasks: nextTasks };
+        });
+
+        if (updatedTask) {
+            syncTaskToCloud(updatedTask!, 'UPSERT');
+        }
     };
 
     const deleteTask = (id: string) => {
+        const taskToDelete = data.tasks.find(t => t.id === id);
+
         setData(prev => ({
             ...prev,
             tasks: prev.tasks.filter(t => t.id !== id)
         }));
+
+        if (taskToDelete) {
+            syncTaskToCloud(taskToDelete, 'DELETE');
+        }
+    };
+
+    const editTask = (id: string, newText: string) => {
+        let updatedTask: Task | undefined;
+
+        setData(prev => {
+            const nextTasks = prev.tasks.map(t => {
+                if (t.id === id) {
+                    updatedTask = { ...t, text: newText };
+                    return updatedTask;
+                }
+                return t;
+            });
+            return { ...prev, tasks: nextTasks };
+        });
+
+        if (updatedTask) {
+            syncTaskToCloud(updatedTask!, 'UPSERT');
+        }
     };
 
     // Stats for displaying progress
@@ -99,7 +185,7 @@ export function useTaskManager() {
         totalCount,
         addTask,
         toggleTask,
-        editTask,
         deleteTask,
+        editTask
     };
 }

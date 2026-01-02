@@ -8,6 +8,8 @@ import { CloudRain, CloudSnow, Cloud, Sun, Moon, CloudLightning, Maximize2, Mini
 import { Navigation } from './components/Navigation';
 import { JournalView } from './components/JournalView';
 import { HabitTracker } from './components/HabitTracker';
+import { PhoneLogin } from './components/PhoneLogin';
+import { useSupabase } from './context/SupabaseContext';
 
 // Available texture classes
 const TEXTURES = [
@@ -57,6 +59,25 @@ function App() {
 
   const hour = now.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const { session, isLoading } = useSupabase();
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#0f1014] text-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  // Auth Guard
+  if (!session) {
+    // Pass isDark based on system preference or default (since theme isn't loaded yet)
+    // We can just query media query for now or default to dark
+    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return <PhoneLogin isDark={isSystemDark} />;
+  }
 
   if (!theme) return null;
 
