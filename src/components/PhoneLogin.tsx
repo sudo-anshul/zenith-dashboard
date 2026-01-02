@@ -19,6 +19,18 @@ export const PhoneLogin = ({ isDark }: PhoneLoginProps) => {
         setLoading(true);
         setError('');
 
+        // Security Check: Restrict to allowed phone number if configured
+        const allowedPhone = import.meta.env.VITE_ALLOWED_PHONE;
+        // Normalize: Remove spaces for comparison
+        const normalizedInput = phone.replace(/\s/g, '');
+        const normalizedAllowed = allowedPhone ? allowedPhone.replace(/\s/g, '') : null;
+
+        if (normalizedAllowed && normalizedInput !== normalizedAllowed) {
+            setLoading(false);
+            setError('Access Denied: You are not authorized to log in.');
+            return;
+        }
+
         const { error } = await signInWithPhone(phone);
         setLoading(false);
 
